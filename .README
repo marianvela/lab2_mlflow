@@ -1,0 +1,97 @@
+# Pasos para Ejecutar el contenedor
+
+## **Requisitos previos**
+1. Verificar instalacion de Docker
+2. Archivo de datast en formato .parquet 
+3. Estructura del directorio
+4. Configuración del archivo .env
+
+## Estructura
+lab2_mlflow/
+ > Dockerfile
+ > main.py
+ > automl_pipeline.py
+ > requirements.txt
+ > .env
+ > README.md
+ > data/
+    df_mflow_test.parquet
+    input/   # input para batch prediction
+    output/  # output para batch prediction
+
+## Construir Docker Container
+docker build -t lab2_mlflow .
+
+
+# Batch Prediction
+**Configuración del archivo .env**
+En el archivo .env se tienen las variables globales, en particular las siguientes son importantes para poder predecir usando Batch Prediction:
+
+DATASET: path al dataset
+TARGET: variable dependiente, variables por predecir
+MODEL: tipo de modelo, puede ser RandomForest, SVM, KNN, NaiveBayes. 
+TRIALS: cantidad de ejecuciones
+DEPLOYMENT_TYPE="Batch" : aquí escogemos Batch
+INPUT_FOLDER: ruta del folder de input
+OUTPUT_FOLDER: ruta del folder de output
+
+**Ejecutar el contenedor**
+docker run --env-file .env -v "$(pwd)/data:/app/data" automl-dockerizer
+
+
+# API Prediction
+En el archivo .env se tienen las variables globales, para ejecutar el modo API son importantes las siguientes:
+
+DATASET: path al dataset
+TARGET: variable dependiente, variables por predecir
+MODEL: tipo de modelo, puede ser RandomForest, SVM, KNN, NaiveBayes. 
+TRIALS: cantidad de ejecuciones
+DEPLOYMENT_TYPE="API" : aquí escogemos API
+PORT=8000: se define el puerto para ejecución con la API.
+
+
+La API expone un endpoint llamado /predict que recibe datos en formato JSON que realiza la predicción usando el modelo previamente entrenado y devuelva las probabilidades para cada clase en un formato JSON.
+
+## Formato de Peticion JSON
+{
+  "features": [
+    {
+      "AccountViewingInteraction": valor1,
+      "AverageViewingDuration": valor2,
+      "EngagementScore": valor3,
+      "ContentDownloadsPerMonth": valor4,
+      "MonthlyCharges": valor5,
+      "AccountAge": valor6,
+      "ViewingHoursPerWeek": valor7,
+      "ViewingHoursVariation": valor8,
+      "BandwidthUsage": valor9,
+      "AnnualIncome": valor10,
+      "SupportTicketsPerMonth": valor11,
+      "UserRating": valor12,
+      "NetworkLatency": valor13,
+      "TotalCharges": valor14,
+      "CommentsOnContent": valor15,
+      "Age": valor16,
+      "SocialMediaInteractions": valor17,
+      "WatchlistSize": valor18,
+      "WebsiteVisitsPerWeek": valor19,
+      "PersonalizedRecommendations": valor20
+    }
+  ]
+}
+
+
+## Formato de Resultado JSON
+{
+  "predictions": [
+    {"Clase1": 0.1, "Clase2": 0.7, "Clase3": 0.2},
+    {"Clase1": 0.3, "Clase2": 0.4, "Clase3": 0.3}
+  ]
+}
+
+**Ejecutar el contenedor**
+docker run --env-file .env -p 8000:8000 -v "$(pwd)/data:/app/data" automl-dockerizer
+
+## Ejemplo de request usando curl
+curl -X POST "http://localhost:8000/predict" -H "Content-Type: application/json" \
+-d '{"features": [{"col1": valor1, "col2": "vaor2"}]}'
